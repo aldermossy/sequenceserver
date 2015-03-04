@@ -1,0 +1,6 @@
+[{"name": "Pull These seqs every 24hrs",
+  "max_age_hrs": 24,
+  "url": "http://ncbi.org/fake_url"
+ }
+  
+]
