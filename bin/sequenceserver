@@ -2,7 +2,7 @@
 require 'readline'
 require 'English'
 require 'slop'
-
+require 'pry'
 ENV['RACK_ENV'] ||= 'production'
 
 # display name for tools like `ps`
@@ -127,7 +127,7 @@ BANNER
         exit
       end
 
-      require 'sequenceserver'
+      require_relative '../lib/sequenceserver'
 
       begin
         SequenceServer.init clean_opts[to_h]
@@ -317,6 +317,7 @@ MSG
           puts
           print '>> '
           response = STDIN.gets.to_s.strip
+
           unless response.match(/^[n]$/i)
             puts
             puts 'Searching ...'
