@@ -53,6 +53,9 @@ pkg
 *.~*~
 .gems/*
 node_modules
-config/!Example*
+#Ignore all config files
+config/*.json
+#Do not ignore the exmple file...
+config/!example_db_config.json
 public/blast_data
 
