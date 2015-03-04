@@ -51,6 +51,8 @@ pkg
 
 *.swp
 *.~*~
-Gemfile.lock
 .gems/*
 node_modules
+config/!Example*
+public/blast_data
+

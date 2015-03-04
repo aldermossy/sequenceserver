@@ -10,6 +10,7 @@ module SequenceServer
     def_delegators SequenceServer, :logger
 
     def initialize(data = {})
+      
       @data = normalize data
       @config_file = @data.delete(:config_file) || default_config_file
       @config_file = File.expand_path(@config_file)
