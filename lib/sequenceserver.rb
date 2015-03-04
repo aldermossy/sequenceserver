@@ -1,14 +1,14 @@
 require 'English'
 require 'thin'
 
-require 'sequenceserver/exceptions'
-require 'sequenceserver/config'
-require 'sequenceserver/logger'
-require 'sequenceserver/search'
-require 'sequenceserver/sequence'
-require 'sequenceserver/database'
-require 'sequenceserver/blast'
-require 'sequenceserver/routes'
+require_relative 'sequenceserver/exceptions'
+require_relative 'sequenceserver/config'
+require_relative 'sequenceserver/logger'
+require_relative 'sequenceserver/search'
+require_relative 'sequenceserver/sequence'
+require_relative 'sequenceserver/database'
+require_relative 'sequenceserver/blast'
+require_relative 'sequenceserver/routes'
 
 # Top level module / namespace.
 module SequenceServer

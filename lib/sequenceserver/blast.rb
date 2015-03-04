@@ -3,14 +3,14 @@ require 'tempfile'
 require 'English'
 require 'ox'
 
-require 'sequenceserver/links'
-require 'sequenceserver/blast/exceptions'
-require 'sequenceserver/blast/constants'
-require 'sequenceserver/blast/formatter'
-require 'sequenceserver/blast/report'
-require 'sequenceserver/blast/query'
-require 'sequenceserver/blast/hit'
-require 'sequenceserver/blast/hsp'
+require_relative './links'
+require_relative './blast/exceptions'
+require_relative './blast/constants'
+require_relative './blast/formatter'
+require_relative './blast/report'
+require_relative './blast/query'
+require_relative './blast/hit'
+require_relative './blast/hsp'
 
 module SequenceServer
   # Simple wrapper around BLAST+ search algorithms.

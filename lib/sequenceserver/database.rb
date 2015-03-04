@@ -2,7 +2,7 @@ require 'find'
 require 'digest/md5'
 require 'forwardable'
 
-require 'sequenceserver/sequence'
+require_relative 'sequence'
 
 # Define Database class.
 module SequenceServer
@@ -96,7 +96,6 @@ module SequenceServer
 
       # Recurisvely scan `database_dir` for blast databases.
       def scan_databases_dir
-        database_dir = config[:database_dir]
         cmd = "blastdbcmd -recursive -list #{database_dir}" \
               ' -list_outfmt "%f	%t	%p	%n	%l	%d" 2>&1'
         list = `#{cmd}`
@@ -122,7 +121,7 @@ module SequenceServer
       #   => [['/foo/bar.fasta', :nulceotide], ...]
       def unformatted_fastas
         list = []
-        database_dir = config[:database_dir]
+
         Find.find database_dir do |file|
           next if File.directory? file
           next if Database.include? file
@@ -133,6 +132,9 @@ module SequenceServer
           end
         end
         list
+      end
+      def database_dir
+        config[:database_dir]
       end
 
       # Create BLAST database, given FASTA file and sequence type in FASTA file.
