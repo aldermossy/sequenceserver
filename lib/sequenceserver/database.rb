@@ -83,6 +83,13 @@ module SequenceServer
       def group_by(&block)
         all.group_by(&block)
       end
+      
+      def use_default_for_command_line=(v)
+        @use_default_for_command_line = v
+      end
+      def use_default_for_command_line
+        @use_default_for_command_line || false
+      end
 
       # Intended to be used only for testing.
       def first
@@ -160,6 +167,9 @@ module SequenceServer
         puts
         puts "FASTA file: #{file}"
         puts "FASTA type: #{type}"
+                
+        return true if use_default_for_command_line
+        
         print 'Proceed? [y/n] (Default: y): '
 
         response = STDIN.gets.to_s.strip
@@ -173,6 +183,7 @@ module SequenceServer
       def get_database_title(path)
         default = make_db_title(File.basename(path))
         print "Enter a database title or will use '#{default}': "
+        return default if use_default_for_command_line
         from_user = STDIN.gets.to_s
         from_user.strip.empty? && default || from_user
       end

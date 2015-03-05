@@ -1,6 +1,9 @@
 require 'spec_helper'
 require 'fileutils'
 
+MockPullRemoteFasta = Struct.new("MockPullRemoteFasta", :database_dir, :data_has_been_pulled)
+
+
 module PullRemoteFastaSpecHelper
 
   def base_export_dir
@@ -21,6 +24,11 @@ module PullRemoteFastaSpecHelper
     FileUtils.touch temp_fasta_file
   end
   
+  def mock_pull_remote_fasta_obj
+   
+   MockPullRemoteFasta.new(base_export_dir, false)
+  end
+  
 end
 
 describe 'PullRemoteFasta' do
@@ -32,26 +40,27 @@ describe 'PullRemoteFasta' do
    # Database.clear
   end
   it 'should be able to find config files for remote files' do
-    pull_remote_fasta = PullRemoteFasta.new(test_example_db_config )
+    pull_remote_fasta = PullRemoteFasta.new(test_example_db_config, 'database_dir_test_path')
     expect(pull_remote_fasta.config_file_path).to match /example_db_config.json/
   end
-  it 'should be able to use a default path to config file if no path given' do
-    pull_remote_fasta = PullRemoteFasta.new
-     expect(pull_remote_fasta.config_file_path).to match /pull_db_config.json/
-  end
-  
 end
 
 
 describe "It should be able to pull data and write out data" do
   include PullRemoteFastaSpecHelper
   before(:each) do
-    @pull_remote_fasta = PullRemoteFasta.new( test_example_db_config )
+    @pull_remote_fasta = PullRemoteFasta.new( test_example_db_config, base_export_dir )
   end
   it 'should know about urls to pull' do
     expect(@pull_remote_fasta.items_to_pull.length).to eq 2
   end
+  it 'should know if it pulled data' do
+    expect(@pull_remote_fasta.data_has_been_pulled?).to eq false
+  end
+  
 end
+
+
 
 
 
@@ -63,21 +72,22 @@ describe "Should have a helper class to pull the actual data" do
                        :max_age_hrs =>  24,
                        :url =>          "http://google.com",
                        :database_dir => base_export_dir
-                      }
+                      },
+                      mock_pull_remote_fasta_obj
                     )
   end
   it 'should have some reader methods' do
     expect(@remote_fasta.url).to eq 'http://google.com'
     expect(@remote_fasta.name).to eq 'TEST_DB_1'
     expect(@remote_fasta.max_age_hrs).to eq 24
-    expect(@remote_fasta.database_dir).to match 'remote_database'
+
   end
   it 'should be able to make a path to the database_dir' do
     expect(@remote_fasta.out_file_path).to match /remote_database\/TEST_DB_1/
   end
   
   it 'should be able to get data and write out ' do   
-   expect(@remote_fasta.get_data_and_write_out).to eq nil
+   expect(@remote_fasta.get_data_and_write_out).to eq true
    
   end
   after(:each) do
@@ -94,9 +104,9 @@ describe "Should be able to figure out if files are older then max age" do
     @remote_fasta = RemoteFasta.new(
                       {:name =>         "old_fasta_file",
                        :max_age_hrs =>  0.00138888888889, #5 secs
-                       :url =>          "http://google.com",
-                       :database_dir => base_export_dir
-                      }
+                       :url =>          "http://google.com"
+                      },
+                      mock_pull_remote_fasta_obj
                     )
   end
   it 'should know if file is older then max age' do
@@ -107,8 +117,8 @@ describe "Should be able to figure out if files are older then max age" do
                       {:name =>         "old_fasta_file",
                        :max_age_hrs =>  24, 
                        :url =>          "http://google.com",
-                       :database_dir => base_export_dir
-                      }
+                      },
+                      mock_pull_remote_fasta_obj
                     )
     touch_temp_fasta_file
     
