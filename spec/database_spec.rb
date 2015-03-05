@@ -75,7 +75,9 @@ module SequenceServer
     end
 
     it 'can tell BLAST+ databases in a directory' do
-      SequenceServer.config[:database_dir] = database_dir_sample
+
+      SequenceServer.init(:database_dir => database_dir_sample)
+
       Database.scan_databases_dir
       Database.all.length.should eq 2
     end
