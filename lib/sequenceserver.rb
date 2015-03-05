@@ -127,8 +127,7 @@ module SequenceServer
              File.directory?(config[:database_dir])
         fail DATABASE_DIR_NOT_FOUND, config[:database_dir]
       end
-
-      PullRemoteFasta.pull_remote_db_if_present
+      pull_remote_fasta_files_if_needed
 
       assert_blast_databases_present_in_database_dir
       logger.debug("Will use BLAST+ databases at: #{config[:database_dir]}")
@@ -138,6 +137,20 @@ module SequenceServer
         logger.debug("Found #{database.type} database '#{database.title}'" \
                      " at '#{database.name}'")
       end
+    end
+    def pull_remote_fasta_files_if_needed
+      
+      pull_remote_fasta = PullRemoteFasta.new("./config/pull_db_config.json", config[:database_dir])
+      pull_remote_fasta.pull_remote_items
+
+      if pull_remote_fasta.data_has_been_pulled?
+        
+        #Turn off the STDIN questions
+        SequenceServer::Database.use_default_for_command_line= true
+        SequenceServer::Database.make_blast_databases 
+      end
+      
+      
     end
 
     def check_num_threads
