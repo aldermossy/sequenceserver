@@ -9,6 +9,7 @@ require_relative 'sequenceserver/sequence'
 require_relative 'sequenceserver/database'
 require_relative 'sequenceserver/blast'
 require_relative 'sequenceserver/routes'
+require_relative 'sequenceserver/pull_remote_fasta'
 
 # Top level module / namespace.
 module SequenceServer
@@ -126,6 +127,8 @@ module SequenceServer
              File.directory?(config[:database_dir])
         fail DATABASE_DIR_NOT_FOUND, config[:database_dir]
       end
+
+      PullRemoteFasta.pull_remote_db_if_present
 
       assert_blast_databases_present_in_database_dir
       logger.debug("Will use BLAST+ databases at: #{config[:database_dir]}")

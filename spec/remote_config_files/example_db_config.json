@@ -1,0 +1,10 @@
+[{"name": "TEST_DB_1",
+  "max_age_hrs": 24,
+  "url": "http://ncbi.org/fake_url"
+ },
+ {"name": "TEST_DB_2",
+   "max_age_hrs": 1,
+   "url": "http://ncbi.org/fake_url2"
+  }
+  
+]
