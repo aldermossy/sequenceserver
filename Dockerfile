@@ -57,9 +57,6 @@ CMD ["/sbin/my_init"]
 
 #docker run -d  -p 4567:4567 --name sequenceserver aldermossy/sequenceserver
 
-#Manually copy in some VH sequences  and then run server
-# ./bin/sequenceserver -d /home/app/webapp/public/blast_data 
-
 
 
 

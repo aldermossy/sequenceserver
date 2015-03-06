@@ -14,7 +14,7 @@ if ENV["RACK_ENV"] == 'development' || ENV["RACK_ENV"] == 'test'
     path  = File.expand_path(File.dirname(__FILE__))
   else
     set :bin_dir, '/home/app'
-    path = '/home/app/SintraServer'
+    path = '/home/app/webapp'
 end
 
 
