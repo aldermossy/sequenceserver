@@ -11,6 +11,7 @@ require_relative './blast/report'
 require_relative './blast/query'
 require_relative './blast/hit'
 require_relative './blast/hsp'
+require_relative './pull_remote_fasta_mod'
 
 module SequenceServer
   # Simple wrapper around BLAST+ search algorithms.
@@ -19,6 +20,8 @@ module SequenceServer
   # when attempting a BLAST search.
   module BLAST
     class << self
+      
+      include PullRemoteFastaMod
       extend Forwardable
 
       def_delegators SequenceServer, :config, :logger
@@ -100,26 +103,6 @@ module SequenceServer
       end
       # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/MethodLength
-      
-
-      def pull_remote_fasta_files_if_needed
-        
-        pull_remote_fasta = PullRemoteFasta.new("./config/pull_db_config.json",  config[:database_dir])
-        pull_remote_fasta.pull_remote_items
-
-        if pull_remote_fasta.data_has_been_pulled?
-         # SequenceServer::Database.scan_databases_dir
-          pull_remote_fasta.all_new_fasta_paths.each do |path_to_fasta_to_recreate_blast_db|
-               SequenceServer::Database.remove_from_collection( path_to_fasta_to_recreate_blast_db  )
-          end
-          #Turn off the STDIN questions         
-          SequenceServer::Database.use_default_for_command_line= true
-          SequenceServer::Database.make_blast_databases 
-        end
-      
-      
-      end
-      
       
       def pre_process(params)
         params[:sequence].strip! unless params[:sequence].nil?

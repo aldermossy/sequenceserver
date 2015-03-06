@@ -10,6 +10,7 @@ require_relative 'sequenceserver/database'
 require_relative 'sequenceserver/blast'
 require_relative 'sequenceserver/routes'
 require_relative 'sequenceserver/pull_remote_fasta'
+require_relative 'sequenceserver/pull_remote_fasta_mod'
 
 # Top level module / namespace.
 module SequenceServer
@@ -17,6 +18,7 @@ module SequenceServer
   MINIMUM_BLAST_VERSION           = '2.2.30+'
 
   class << self
+    include PullRemoteFastaMod
     def environment
       ENV['RACK_ENV']
     end
@@ -138,20 +140,7 @@ module SequenceServer
                      " at '#{database.name}'")
       end
     end
-    def pull_remote_fasta_files_if_needed
-      
-      pull_remote_fasta = PullRemoteFasta.new("./config/pull_db_config.json", config[:database_dir])
-      pull_remote_fasta.pull_remote_items
 
-      if pull_remote_fasta.data_has_been_pulled?
-        
-        #Turn off the STDIN questions
-        SequenceServer::Database.use_default_for_command_line= true
-        SequenceServer::Database.make_blast_databases 
-      end
-      
-      
-    end
 
     def check_num_threads
       num_threads = Integer(config[:num_threads])
