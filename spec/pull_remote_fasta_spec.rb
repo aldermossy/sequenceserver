@@ -1,7 +1,7 @@
 require 'spec_helper'
 require 'fileutils'
 
-MockPullRemoteFasta = Struct.new("MockPullRemoteFasta", :database_dir, :data_has_been_pulled)
+MockPullRemoteFasta = Struct.new("MockPullRemoteFasta", :database_dir, :data_has_been_pulled, :all_new_fasta_paths)
 
 
 module PullRemoteFastaSpecHelper
@@ -26,19 +26,13 @@ module PullRemoteFastaSpecHelper
   
   def mock_pull_remote_fasta_obj
    
-   MockPullRemoteFasta.new(base_export_dir, false)
+   MockPullRemoteFasta.new(base_export_dir, false, [])
   end
   
 end
 
 describe 'PullRemoteFasta' do
   include PullRemoteFastaSpecHelper
-
-  before :each do
-    # Empty Database collection so we can use different directories as
-    # needed.      
-   # Database.clear
-  end
   it 'should be able to find config files for remote files' do
     pull_remote_fasta = PullRemoteFasta.new(test_example_db_config, 'database_dir_test_path')
     expect(pull_remote_fasta.config_file_path).to match /example_db_config.json/

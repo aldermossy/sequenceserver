@@ -3,13 +3,15 @@ class PullRemoteFasta
   attr_accessor :config_file_path, 
                 :items_to_pull,
                 :database_dir,
-                :data_has_been_pulled
+                :data_has_been_pulled,
+                :all_new_fasta_paths
                 
   def initialize(config_file_path, database_dir)
    @config_file_path = config_file_path
    @database_dir = database_dir
    
    @items_to_pull = []
+   @all_new_fasta_paths  = []
    @data_has_been_pulled = false
    read_config_file_if_present
   end
@@ -54,6 +56,7 @@ class RemoteFasta
     @remote_data = ''
     @data_has_been_pulled = false
     
+    
     @pull_remote_fasta_obj = pull_remote_fasta_obj
     
   end
@@ -76,11 +79,15 @@ class RemoteFasta
     r = `#{cmd}`
     check_exit_status(r)
     record_data_has_been_pulled
+    true
   end
+  
+
   
   private
   def record_data_has_been_pulled
     pull_remote_fasta_obj.data_has_been_pulled = true
+    pull_remote_fasta_obj.all_new_fasta_paths << out_file_path
   end
   def database_dir
     pull_remote_fasta_obj.database_dir

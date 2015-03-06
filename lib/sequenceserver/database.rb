@@ -77,7 +77,10 @@ module SequenceServer
       end
 
       def include?(path)
-        collection.include? Digest::MD5.hexdigest path
+        collection.include?  make_key_from_path(path)
+      end
+      def make_key_from_path(path)
+        Digest::MD5.hexdigest path
       end
 
       def group_by(&block)
@@ -90,7 +93,11 @@ module SequenceServer
       def use_default_for_command_line
         @use_default_for_command_line || false
       end
-
+      
+      def remove_from_collection(path)
+        collection.delete(make_key_from_path(path))
+      end
+      
       # Intended to be used only for testing.
       def first
         all.first
@@ -128,7 +135,7 @@ module SequenceServer
       #   => [['/foo/bar.fasta', :nulceotide], ...]
       def unformatted_fastas
         list = []
-
+          
         Find.find database_dir do |file|
           next if File.directory? file
           next if Database.include? file
