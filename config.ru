@@ -7,7 +7,7 @@ require_relative './lib/sequenceserver.rb'
 
 path = ''
 
-env   = :development
+env   = :production
 
 if ENV["RACK_ENV"] == 'development' || ENV["RACK_ENV"] == 'test' 
     env   = :development

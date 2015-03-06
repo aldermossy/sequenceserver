@@ -33,12 +33,16 @@ RUN chown -R app:app /home/software
 RUN bundle install
 
 
+
+#Turn on nginx && remove default nginx config file
+RUN rm -f /etc/service/nginx/down && rm /etc/nginx/sites-enabled/default
+COPY ./config/nginx_webapp.conf /etc/nginx/sites-enabled/webapp.conf  
+
 #Copy in all files
 WORKDIR /home/app/webapp
 
 ADD . /home/app/webapp/
 RUN mkdir -p /home/app/webapp/blast_data;
-
 
 EXPOSE :4567
 
@@ -50,6 +54,8 @@ CMD ["/sbin/my_init"]
 
 ## Manual run sequenceserver within container
 #docker run -it  -p 4567:4567 --name sequenceserver aldermossy/sequenceserver /bin/bash
+
+#docker run -d  -p 4567:4567 --name sequenceserver aldermossy/sequenceserver
 
 #Manually copy in some VH sequences  and then run server
 # ./bin/sequenceserver -d /home/app/webapp/public/blast_data 
