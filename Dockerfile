@@ -42,7 +42,12 @@ COPY ./config/nginx_webapp.conf /etc/nginx/sites-enabled/webapp.conf
 WORKDIR /home/app/webapp
 
 ADD . /home/app/webapp/
-RUN mkdir -p /home/app/webapp/blast_data;
+RUN mkdir -p /home/app/webapp/public/blast_data;
+
+#Site Specific Blast database.  Copy fasta files into blast_dir and sequenceserver will make the blastdb
+COPY ./docker_blast_sequences/Rabbit_VH_AA.fasta /home/app/webapp/public/blast_data/Rabbit_VH_AA.fasta
+
+RUN chown -R app:app /home/app/webapp
 
 EXPOSE :4567
 
@@ -56,6 +61,8 @@ CMD ["/sbin/my_init"]
 #docker run -it  -p 4567:4567 --name sequenceserver aldermossy/sequenceserver /bin/bash
 
 #docker run -d  -p 4567:4567 --name sequenceserver aldermossy/sequenceserver
+
+#docker push aldermossy/sequenceserver
 
 
 
