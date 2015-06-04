@@ -44,13 +44,13 @@ end
 
 
 class RemoteFasta
-  attr_reader :url, :name, :max_age_hrs, :pull_remote_fasta_obj
+  attr_reader :raw_url, :name, :max_age_hrs, :pull_remote_fasta_obj
   
   attr_accessor :remote_data, :data_has_been_pulled
 
   def initialize(args, pull_remote_fasta_obj)
-    @url  = args[:url]
-    @name = args[:name]
+    @raw_url  = args[:url]
+    @name     = args[:name]
     @max_age_hrs = args[:max_age_hrs]
 
     @remote_data = ''
@@ -59,6 +59,9 @@ class RemoteFasta
     
     @pull_remote_fasta_obj = pull_remote_fasta_obj
     
+  end
+  def url
+    raw_url_has_env_var? ? inject_env_host_into_url : raw_url
   end
   def out_file_path
 
@@ -82,7 +85,9 @@ class RemoteFasta
     true
   end
   
-
+  def out_file_time
+    File.stat(out_file_path).mtime
+  end
   
   private
   def record_data_has_been_pulled
@@ -102,9 +107,7 @@ class RemoteFasta
   def check_if_data_is_older_then_max_age
     out_file_time < (Time.now - max_age_in_secs)
   end
-  def out_file_time
-    File.stat(out_file_path).mtime
-  end
+
 
   def max_age_in_secs
     max_age_hrs * 3600
@@ -118,6 +121,22 @@ class RemoteFasta
     "curl --globoff \"#{url}\" -o #{out_file_path}"
   end
 
+  def inject_env_host_into_url
+    env_s = get_env_var_from_match_obj
+    env_var = eval(env_s)
+    raw_url.sub(env_s, env_var)
+
+  end
+  def get_env_var_from_match_obj
+    match_obj = get_env_from_raw_url
+    match_obj[1]
+  end
+  def raw_url_has_env_var?
+    get_env_from_raw_url ? true : false
+  end
+  def get_env_from_raw_url
+    raw_url.match(/(ENV\[.+?\])/)
+  end
   
   
   

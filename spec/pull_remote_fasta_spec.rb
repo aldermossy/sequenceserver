@@ -51,7 +51,7 @@ describe "It should be able to pull data and write out data" do
   it 'should know if it pulled data' do
     expect(@pull_remote_fasta.data_has_been_pulled?).to eq false
   end
-  
+
 end
 
 
@@ -79,22 +79,51 @@ describe "Should have a helper class to pull the actual data" do
   it 'should be able to make a path to the database_dir' do
     expect(@remote_fasta.out_file_path).to match /remote_database\/TEST_DB_1/
   end
-  
-  it 'should be able to get data and write out ' do   
+
+  it 'should be able to get data and write out ' do
    expect(@remote_fasta.get_data_and_write_out).to eq true
-   
+
   end
   after(:each) do
     clean_remote_data_directory
   end
-  
+
 end
+
+describe "Should be able to make url from env variables" do
+  include PullRemoteFastaSpecHelper
+  before(:each) do
+    @remote_fasta = RemoteFasta.new(
+                      {:name =>         "TEST_DB_1",
+                       :max_age_hrs =>  24,
+                       :url =>          "http://ENV['ALDER_SEQ_HOST']",
+                       :database_dir => base_export_dir
+                      },
+                      mock_pull_remote_fasta_obj
+                    )
+
+    ENV['ALDER_SEQ_HOST'] = 'alderlocalhost.lan'
+  end
+  it 'should have be able to use env variable to set url' do
+    expect(@remote_fasta.url).to eq 'http://alderlocalhost.lan'
+    expect(@remote_fasta.name).to eq 'TEST_DB_1'
+    expect(@remote_fasta.max_age_hrs).to eq 24
+  end
+
+  after(:each) do
+    clean_remote_data_directory
+  end
+
+end
+
 
 
 describe "Should be able to figure out if files are older then max age" do
   include PullRemoteFastaSpecHelper
-  
+
   before(:each) do
+    
+    
     @remote_fasta = RemoteFasta.new(
                       {:name =>         "old_fasta_file",
                        :max_age_hrs =>  0.00138888888889, #5 secs
@@ -107,18 +136,19 @@ describe "Should be able to figure out if files are older then max age" do
     expect(@remote_fasta.should_data_be_pulled?).to eq true
   end
   it 'should not pull data if file is not expired' do
+
     @remote_fasta = RemoteFasta.new(
-                      {:name =>         "old_fasta_file",
-                       :max_age_hrs =>  24, 
+                      {:name =>         "temp_fasta",
+                       :max_age_hrs =>  24,
                        :url =>          "http://google.com",
                       },
                       mock_pull_remote_fasta_obj
                     )
+   
     touch_temp_fasta_file
-    
     expect(@remote_fasta.should_data_be_pulled?).to eq false
-  
+
   end
-  
-  
+
+
 end

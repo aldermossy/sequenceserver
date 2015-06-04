@@ -60,7 +60,7 @@ CMD ["/sbin/my_init"]
 ## Manual run sequenceserver within container
 #docker run -it  -p 4567:4567 --name sequenceserver aldermossy/sequenceserver /bin/bash
 
-#docker run -d  -p 4567:4567 --name sequenceserver aldermossy/sequenceserver
+#docker run -d  -p 4567:4567 -e ALDER_SEQ_HOST="research-staging.alderbio.lan" --name sequenceserver aldermossy/sequenceserver
 
 #docker push aldermossy/sequenceserver
 
