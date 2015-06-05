@@ -49,6 +49,9 @@ COPY ./docker_blast_sequences/Rabbit_VH_AA.fasta /home/app/webapp/public/blast_d
 
 RUN chown -R app:app /home/app/webapp
 
+#Run a script to make a json config file using ENV VAR ALDER_SEQ_HOST to set the servername where sequences should be pulled from
+ADD config/make_config_file.sh /etc/my_init.d/make_config_file.sh
+
 EXPOSE :4567
 
 # Use baseimage-docker's init process.
@@ -60,7 +63,7 @@ CMD ["/sbin/my_init"]
 ## Manual run sequenceserver within container
 #docker run -it  -p 4567:4567 --name sequenceserver aldermossy/sequenceserver /bin/bash
 
-#docker run -d  -p 4567:4567 -e ALDER_SEQ_HOST="research-staging.alderbio.lan" --name sequenceserver aldermossy/sequenceserver
+#docker run -d  -p 4567:4567 -e ALDER_SEQ_HOST=research-staging.alderbio.lan --name sequenceserver aldermossy/sequenceserver
 
 #docker push aldermossy/sequenceserver
 

@@ -2,9 +2,8 @@
   "max_age_hrs": 24,
   "url": "http://ncbi.org/fake_url"
  },
- {"name": "Pull These seqs every 24hrs, use env var to set host",
+ {"name": "Pull These seqs every 24hrs, set an env var for the HOST_NAME, for the server to pull sequences from",
    "max_age_hrs": 24,
-   "url": "http://ENV['HOSTNAME']/fake_url"
-  }
-  
+   "url": "http://${HOST_NAME}/fake_url"
+  } 
 ]

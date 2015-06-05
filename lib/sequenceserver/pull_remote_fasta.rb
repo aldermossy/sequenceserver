@@ -138,6 +138,4 @@ class RemoteFasta
     raw_url.match(/(ENV\[.+?\])/)
   end
   
-  
-  
 end
