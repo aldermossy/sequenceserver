@@ -68,7 +68,7 @@ $.webshims.polyfill('forms');
             var modal = $(this).data('bs.modal');
             if (modal) {
                 active = modal.isShown;
-                return !active
+                return !active;
             }
         });
         return active;
@@ -479,7 +479,7 @@ $(document).ready(function(){
     $(document)
     .on('dragenter', function (evt) {
         // Do not activate DnD if a modal is active.
-        if ($.modalActive) return;
+        if ($.modalActive()) return;
 
         // Based on http://stackoverflow.com/a/8494918/1205465.
         // Contrary to what the above link says, the snippet below can't
@@ -593,7 +593,7 @@ $(document).ready(function(){
             var title = "Click to BLAST or press Ctrl+Enter.";
             if ($(this).siblings().length !== 0) {
                 title += " Click dropdown button on the right for other" +
-                         " BLAST algorithms that can be used."
+                         " BLAST algorithms that can be used.";
             }
             return title;
         },
@@ -601,7 +601,7 @@ $(document).ready(function(){
             show: 1000,
             hide: 0
         }
-    })
+    });
 
     // Handles the form submission when Ctrl+Enter is pressed anywhere on page
     $(document).bind("keydown", function (e) {
@@ -652,10 +652,10 @@ $(document).ready(function(){
     $('form').on('blast_method_changed', function (event, methods) {
         // reset
         $('#method')
-        .disable().val('').html('blast')
-        .removeClass('col-md-11').addClass('col-md-12');
+        .disable().val('').html('blast');
 
         $('#methods')
+        .removeClass('input-group')
         .children().not('#method').remove();
 
         // set
@@ -667,29 +667,32 @@ $(document).ready(function(){
 
             if (methods.length >=1) {
                 $('#methods')
+                .addClass('input-group')
                 .append
                 (
-                    $('<button/>')
-                    .attr('type', 'button')
-                    .addClass("btn btn-primary dropdown-toggle col-md-1")
-                    .attr('data-toggle', 'dropdown')
+                    $('<div/>')
+                    .addClass('input-group-btn')
                     .append
                     (
-                        $('<span/>')
-                        .addClass('caret')
-                    ),
-                    $('<ul/>')
-                    .addClass('dropdown-menu')
-                    .append
-                    (
-                        $.map(methods, function (method) {
-                            return $('<li/>').html(SS.decorate(method));
-                        })
+                        $('<button/>')
+                        .attr('type', 'button')
+                        .addClass("btn btn-primary dropdown-toggle")
+                        .attr('data-toggle', 'dropdown')
+                        .append
+                        (
+                            $('<span/>')
+                            .addClass('caret')
+                        ),
+                        $('<ul/>')
+                        .addClass('dropdown-menu dropdown-menu-right')
+                        .append
+                        (
+                            $.map(methods, function (method) {
+                                return $('<li/>').html(SS.decorate(method));
+                            })
+                        )
                     )
                 );
-
-                $('#method')
-                .removeClass('col-md-12').addClass('col-md-11');
             }
 
             // jiggle
@@ -737,7 +740,7 @@ $(document).ready(function(){
             SS.showSequenceViewer(event.target);
     });
 
-    $(document).on('change', '.hit-links :checkbox', function (event) {
+    $(document).on('change', '.hitn :checkbox', function (event) {
         event.stopPropagation();
         SS.selectHit(this);
     });

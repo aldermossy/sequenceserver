@@ -19,16 +19,12 @@ module SequenceServer
       # Make it a policy to dump to 'rack.errors' any exception raised by the
       # app so that error handlers don't have to do it themselves. But for it
       # to always work, Exceptions defined by us should not respond to `code`
-      # or http_status` methods. Error blocks errors must explicitly set http
+      # or `http_status` methods. Error blocks must explicitly set http
       # status, if needed, by calling `status` method.
-      # method.
       enable :dump_errors
 
       # We don't want Sinatra do setup any loggers for us. We will use our own.
       set :logging, nil
-
-      # Public, and views directory will be found here.
-      set :root,    lambda { SequenceServer.root }
     end
 
     # See
@@ -37,6 +33,21 @@ module SequenceServer
       mime_type :fasta, 'text/fasta'
       mime_type :xml,   'text/xml'
       mime_type :tsv,   'text/tsv'
+    end
+
+    configure do
+      # Public, and views directory will be found here.
+      set :root, lambda { SequenceServer.root }
+
+      # Allow :frame_options to be configured for Rack::Protection.
+      #
+      # By default _any website_ can embed SequenceServer in an iframe. To
+      # change this, set `:frame_options` config to :deny, :sameorigin, or
+      # 'ALLOW-FROM uri'.
+      set :protection, lambda {
+        frame_options = SequenceServer.config[:frame_options]
+        frame_options && { :frame_options => frame_options }
+      }
     end
 
     configure :production do
@@ -67,20 +78,19 @@ target="#{target}">)
       # Prettify given data.
       def prettify(data)
         return prettify_tuple(data) if tuple? data
-        return prettify_float(data) if data.is_a? Float
+        return prettify_float(data) if float? data
         data
       end
 
-      # Formats float as "a.bcd" or "a x b^c". The latter if float is
+      # Formats float as "a.bc" or "a x b^c". The latter if float is in
       # scientific notation. Former otherwise.
-      def prettify_float(float)
-        float.to_s.sub(/(\d*\.\d*)e?([+-]\d*)?/) do
-          base  = Regexp.last_match[1]
-          power = Regexp.last_match[2]
-          s = format '%.2f', base
-          s << " &times; 10<sup>#{power}</sup>" if power
-          s
-        end
+      def prettify_float(data)
+        data.to_s.match(/(\d+\.\d+)e?([+-]\d+)?/)
+        base  = Regexp.last_match[1]
+        power = Regexp.last_match[2]
+        s = format '%.2f', base
+        s << " &times; 10<sup>#{power}</sup>" if power
+        s
       end
 
       # Formats an array of two elements as "first (last)".
@@ -90,7 +100,12 @@ target="#{target}">)
 
       # Is the given value a tuple? (array of length two).
       def tuple?(data)
-        return true if data.is_a?(Array) && data.length == 2
+        data.is_a?(Array) && data.length == 2
+      end
+
+      def float?(data)
+        data.is_a?(Float) ||
+          (data.is_a?(String) && data =~ /(\d+\.\d+)e?([+-]\d+)?/)
       end
     end
 

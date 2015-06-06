@@ -1,4 +1,5 @@
 require 'find'
+require 'open3'
 require 'digest/md5'
 require 'forwardable'
 
@@ -109,15 +110,35 @@ module SequenceServer
       end
 
       # Recurisvely scan `database_dir` for blast databases.
+      #
+      # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
       def scan_databases_dir
-        cmd = "blastdbcmd -recursive -list #{database_dir}" \
-              ' -list_outfmt "%f	%t	%p	%n	%l	%d" 2>&1'
-        list = `#{cmd}`
-        list.each_line do |line|
-          name = line.split('	')[0]
-          next if multipart_database_name?(name)
-          self << Database.new(*line.split('	'))
+        cmd = "blastdbcmd -recursive -list #{config[:database_dir]}" \
+              ' -list_outfmt "%f	%t	%p	%n	%l	%d"'
+        Open3.popen3(cmd) do |_, out, err|
+          out = out.read
+          err = err.read
+          throw_scan_error(cmd, out, err, $CHILD_STATUS)
+          out.each_line do |line|
+            name = line.split('	')[0]
+            next if multipart_database_name?(name)
+            begin
+              self << Database.new(*line.split('	'))
+            rescue NoMethodError => e
+              err << "BLAST Database error:\n#{e}\n#{line}"
+            end
+          end
+          throw_scan_error(cmd, out, err, $CHILD_STATUS)
         end
+      end
+      # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+
+      def throw_scan_error(cmd, out, err, child_status)
+        errpat = /BLAST Database error/
+        if !child_status.success? || err.match(errpat)
+          fail BLAST_DATABASE_ERROR.new(cmd, err)
+        end
+        fail NO_BLAST_DATABASE_FOUND, config[:database_dir] if out.empty?
       end
 
       # Recursively scan `database_dir` for un-formatted FASTA and format them
@@ -155,12 +176,14 @@ module SequenceServer
       def make_blast_database(file, type)
         return unless make_blast_database? file, type
         title = get_database_title(file)
-        _make_blast_database(file, type, title)
+        taxid = fetch_tax_id
+        _make_blast_database(file, type, title, taxid)
       end
 
-      def _make_blast_database(file, type, title, quiet = false)
+      def _make_blast_database(file, type, title, taxid, quiet = false)
         cmd = 'makeblastdb -parse_seqids -hash_index ' \
-              "-in #{file} -dbtype #{type.to_s.slice(0, 4)} -title '#{title}'"
+              "-in #{file} -dbtype #{type.to_s.slice(0, 4)} -title '#{title}'" \
+              " -taxid #{taxid}"
         cmd << ' &> /dev/null' if quiet
         system cmd
       end
@@ -178,7 +201,6 @@ module SequenceServer
         return true if use_default_for_command_line
         
         print 'Proceed? [y/n] (Default: y): '
-
         response = STDIN.gets.to_s.strip
         !response.match(/n/i)
       end
@@ -191,8 +213,19 @@ module SequenceServer
         default = make_db_title(File.basename(path))
         print "Enter a database title or will use '#{default}': "
         return default if use_default_for_command_line
-        from_user = STDIN.gets.to_s
-        from_user.strip.empty? && default || from_user
+        from_user = STDIN.gets.to_s.strip
+        from_user.empty? && default || from_user
+      end
+
+      # Get taxid from the user. Returns user input or 0.
+      #
+      # Using 0 as taxid is equivalent to not setting taxid for the database
+      # that will be created.
+      def fetch_tax_id
+        default = 0
+        print 'Enter taxid (optional): '
+        response_user = STDIN.gets.to_s.strip
+        response_user.empty? && default || response_user
       end
 
       # Returns true if the database name appears to be a multi-part database
@@ -203,7 +236,7 @@ module SequenceServer
       # /home/ben/pd.ben/sequenceserver/db/nr => no
       # /home/ben/pd.ben/sequenceserver/db/img3.5.finished.faa.01 => yes
       def multipart_database_name?(db_name)
-        !(db_name.match(/.+\/\S+\d{2}$/).nil?)
+        !(db_name.match(%r{.+/\S+\d{2}$}).nil?)
       end
 
       # Returns true if first character of the file is '>'.

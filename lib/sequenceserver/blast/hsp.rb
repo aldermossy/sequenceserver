@@ -27,16 +27,18 @@ module SequenceServer
       # Returns a Hash of stats common to all BLAST algorithms. Subclasses must
       # update the returned Hash to add relevant stats of their own.
       #
+      # rubocop:disable Metrics/AbcSize
       def stats
         {
-          'Score'      => [bit_score, score],
-          'E value'    => evalue,
+          'Score'      => [in_twodecimal(bit_score), score],
+          'E value'    => in_scientific_or_twodecimal(evalue),
           'Identities' => [in_fraction(identity,   length),
                            in_percentage(identity, length)],
           'Gaps'       => [in_fraction(gaps,   length),
                            in_percentage(gaps, length)]
         }
       end
+      # rubocop:enable Metrics/AbcSize
 
       # Returns pretty formatted alignment String.
       #
@@ -148,7 +150,7 @@ module SequenceServer
 
       ## We define stats in terms of the following functions. ##
 
-      # Return fractional representation as String.
+      # Returns fractional representation as String.
       #
       # NOTE:
       #   Rational class reduces the fraction so we can't use that.
@@ -156,9 +158,21 @@ module SequenceServer
         "#{num}/#{den}"
       end
 
-      # Return percentage as Float.
+      # Returns percentage as Float-String formatted to two decimal places.
       def in_percentage(num, den)
         format '%.2f', (num * 100.0 / den)
+      end
+
+      # Returns given Float as String formatted to two decimal places.
+      def in_twodecimal(num)
+        format '%.2f', num
+      end
+
+      # Formats the given number as "1e-3" if the number is less than 1 or
+      # greater than 10.
+      def in_scientific_or_twodecimal(num)
+        return in_twodecimal(num) if num >= 1 && num < 10
+        format '%.2e', num.to_f
       end
     end
 

@@ -92,6 +92,14 @@ MSG
     end
   end
 
+  # Raised if SequenceServer could not successfully execute 'blastp -version'
+  # on user's system (see #141).
+  class BLAST_NOT_EXECUTABLE < StandardError
+    def to_s
+      'Error executing BLAST+ binaries.'
+    end
+  end
+
   # Raised if SequenceServer determined NCBI BLAST+ present on the user's
   # system but not meeting SequenceServer's minimum version requirement.
   class BLAST_NOT_COMPATIBLE < StandardError
@@ -132,7 +140,7 @@ MSG
   end
 
   # Raised if there was an error determining BLAST+ databases in database_dir.
-  class BLAST_DATABASE_ERROR
+  class BLAST_DATABASE_ERROR < StandardError
     def initialize(cmd, out)
       @cmd = cmd
       @out = out

@@ -8,6 +8,18 @@ ENV['RACK_ENV'] ||= 'production'
 # display name for tools like `ps`
 $PROGRAM_NAME = 'sequenceserver'
 
+# Given a url downloads the archive into a temporary file
+# and and extratcs it into ~/.sequenceserver
+def download_from_url(url)
+  archive = File.join('/tmp', File.basename(url))
+  # -ip4 is required  to avoid this curl bug http://sourceforge.net/p/curl/bugs/1424/?limit=25
+  # see also https://github.com/yannickwurm/sequenceserver/issues/139
+  cmd = "curl -ip4 -C - #{url} -o #{archive} && " \
+        'mkdir -p ~/.sequenceserver && '          \
+        "tar xvf #{archive} -C ~/.sequenceserver"
+  system cmd
+end
+
 begin
   Slop.parse!(:strict => true, :help => true) do
     banner <<BANNER
@@ -19,31 +31,40 @@ USAGE
 
 sequenceserver [options]
 
-Example:
+EXAMPLE
 
-  # launch SequenceServer with the given config file
+  # Launch SequenceServer. This will read configuration from
+  # ~/.sequenceserver.conf, if present.
+  $ sequenceserver
+
+  # Use a different config file.
   $ sequenceserver -c ~/.sequenceserver.ants.conf
 
-  # use the bundled database formatter utility to prepare databases for use
-  # with SequenceServer
+  # Set number of threads to use. This will save the number
+  # of threads to use in config file.
+  $ sequenceserver -s -n 16
+
+  # See if you have FASTA files in database dir that haven't
+  # been converted into BLAST database.
+  $ sequenceserver -u
+
+  # Search for FASTA files in database dir that haven't been
+  # converted into BLAST database yet, and convert them.
   $ sequenceserver -m
 
 DESCRIPTION
 
 SequenceServer lets you rapidly set up a BLAST+ server with an intuitive user
-interface for use locally or over the web.
-
-If BLAST+ is not installed on your system, SequenceServer will offer to install
-BLAST+ for you.
-
-You should only ever have to point it to a directory of FASTA files.
+interface for use locally or over the web. If BLAST+ is not installed on your
+system, SequenceServer will offer to install BLAST+ for you.  You should only
+ever have to point it to a directory of FASTA files / BLAST+ databases.
 
 In a given directory, SequenceServer is able to tell FASTA files that are yet
 to be formatted for use with BLAST+ and format them, and FASTA files that are
 already formatted for use with BLAST+, heuristically skipping all other files
 in the directory. Directories are scanned recursively. Type of sequences in a
-FASTA file is detected automagically. `parse_seqids` option of `makeblastdb` is
-used to create BLAST+ databases.
+FASTA file is detected automagically. `parse_seqids` and `hash_index` options
+of `makeblastdb` are used to create BLAST+ databases.
 BANNER
 
     on 'c', 'config_file=',
@@ -69,7 +90,7 @@ BANNER
        'Load extension from this file',
        :argument => true
 
-    on 'h', 'host=',
+    on 'H', 'host=',
        'Host to run SequenceServer on',
        :argument => true
 
@@ -82,6 +103,9 @@ BANNER
 
     on 'm', 'make-blast-databases',
        'Create BLAST databases'
+
+    on 'download-taxdb',
+       'Download the taxdb files'
 
     on 'l', 'list_databases',
        'List BLAST databases'
@@ -109,10 +133,8 @@ BANNER
 
     run do
       if version?
-        gemspec_file = File.join(File.dirname(__FILE__), '..',
-                                 'sequenceserver.gemspec')
-        gemspec = eval File.read gemspec_file
-        puts gemspec.version
+        require 'sequenceserver/version'
+        puts SequenceServer::VERSION
         exit
       end
 
@@ -137,7 +159,8 @@ BANNER
       # error scenarios either when creating a new SequenceServer (first
       # time or later), or updating config values using -s CLI option.
 
-      rescue SequenceServer::CONFIG_FILE_ERROR => e
+      rescue SequenceServer::CONFIG_FILE_ERROR,
+             SequenceServer::BLAST_DATABASE_ERROR => e
 
         puts e
         exit!
@@ -195,6 +218,7 @@ BANNER
         exit!
 
       rescue SequenceServer::BLAST_NOT_INSTALLED,
+             SequenceServer::BLAST_NOT_EXECUTABLE,
              SequenceServer::BLAST_NOT_COMPATIBLE => e
 
         # Show original error message first.
@@ -248,13 +272,7 @@ https://github.com/yannickwurm/sequenceserver/issues
 
 ERR
                 end
-
-          archive = File.join('/tmp', File.basename(url))
-          # -ip4 is required  to avoid this curl bug http://sourceforge.net/p/curl/bugs/1424/?limit=25
-          # see also https://github.com/yannickwurm/sequenceserver/issues/139
-          system "curl -ip4 -C - #{url} -o #{archive} && "    \
-                 'mkdir -p ~/.sequenceserver && '             \
-                 "tar xvf #{archive} -C ~/.sequenceserver"
+          download_from_url(url)
           unless $CHILD_STATUS.success?
             puts 'Failed to install BLAST+.'
             puts '  You may need to download BLAST+ from - '
@@ -333,6 +351,24 @@ MSG
             exit! unless set?
           end
         end
+
+      rescue => e
+        # This will catch any unhandled error and some very special errors.
+        # Ideally we will never hit this block. If we do, there's a bug in
+        # SequenceServer or something really weird going on. If we hit this
+        # error block we show the stacktrace to the user requesting them to
+        # post the same to our Google Group.
+        puts <<MSG
+Something went wonky
+
+Looks like you have encountered a bug in SequenceServer. Please could you
+report this incident to our Google Group -
+https://groups.google.com/forum/?fromgroups#!forum/sequenceserver
+
+Error:
+#{e.backtrace.unshift(e.message).join("\n")}
+MSG
+        exit
       end
 
       if interactive?
@@ -361,6 +397,14 @@ MSG
 
       if make_blast_databases?
         SequenceServer::Database.make_blast_databases
+        exit
+      end
+
+      if download_taxdb?
+        download_from_url('ftp://ftp.ncbi.nlm.nih.gov/blast/db/'\
+                          'taxdb.tar.gz')
+        puts
+        puts 'taxdb downloaded!'
         exit
       end
 

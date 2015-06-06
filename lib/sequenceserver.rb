@@ -1,21 +1,23 @@
 require 'English'
-require 'thin'
 
-require_relative 'sequenceserver/exceptions'
-require_relative 'sequenceserver/config'
-require_relative 'sequenceserver/logger'
-require_relative 'sequenceserver/search'
-require_relative 'sequenceserver/sequence'
-require_relative 'sequenceserver/database'
-require_relative 'sequenceserver/blast'
-require_relative 'sequenceserver/routes'
+require 'sequenceserver/version'
+require 'sequenceserver/exceptions'
+require 'sequenceserver/config'
+require 'sequenceserver/logger'
+require 'sequenceserver/server'
+require 'sequenceserver/search'
+require 'sequenceserver/sequence'
+require 'sequenceserver/database'
+require 'sequenceserver/blast'
+require 'sequenceserver/routes'
 require_relative 'sequenceserver/pull_remote_fasta'
 require_relative 'sequenceserver/pull_remote_fasta_mod'
+
 
 # Top level module / namespace.
 module SequenceServer
   # Use a fixed minimum version of BLAST+
-  MINIMUM_BLAST_VERSION           = '2.2.30+'
+  MINIMUM_BLAST_VERSION = '2.2.30+'
 
   class << self
     include PullRemoteFastaMod
@@ -54,35 +56,33 @@ module SequenceServer
     # Run SequenceServer as a self-hosted server using Thin webserver.
     def run
       check_host
-      url = "http://#{config[:host]}:#{config[:port]}"
-      server = Thin::Server.new(config[:host],
-                                config[:port],
-                                :signals => false) do
-        use Rack::CommonLogger
-        run SequenceServer
-      end
-      server.silent = true
-      server.backend.start do
-        puts '** SequenceServer is ready.'
-        puts "   Go to #{url} in your browser and start BLASTing!"
-        puts '   Press CTRL+C to quit.'
-        [:INT, :TERM].each do |sig|
-          trap sig do
-            server.stop!
-            puts
-            puts '** Thank you for using SequenceServer :).'
-            puts '   Please cite: '
-            puts '             Priyam, Woodcroft, Rai & Wurm,'
-            puts '             SequenceServer (in prep).'
-          end
-        end
-      end
-    rescue
-      puts '** Oops! There was an error.'
-      puts "   Is SequenceServer already accessible at #{url}?"
-      puts '   Try running SequenceServer on another port, like so:'
+      Server.run(self)
+    rescue Errno::EADDRINUSE
+      puts "** Could not bind to port #{config[:port]}."
+      puts "   Is SequenceServer already accessible at #{server_url}?"
+      puts '   No? Try running SequenceServer on another port, like so:'
       puts
       puts '       sequenceserver -p 4570.'
+    rescue Errno::EACCES
+      puts "** Need root privilege to bind to port #{config[:port]}."
+      puts '   It is not advisable to run SequenceServer as root.'
+      puts '   Please use Apache/Nginx to bind to a privileged port.'
+      puts '   Instructions available on http://sequenceserver.com.'
+    end
+
+    def on_start
+      puts '** SequenceServer is ready.'
+      puts "   Go to #{server_url} in your browser and start BLASTing!"
+      puts '   Press CTRL+C to quit.'
+      open_in_browser(server_url)
+    end
+
+    def on_stop
+      puts
+      puts '** Thank you for using SequenceServer :).'
+      puts '   Please cite: '
+      puts '             Priyam, Woodcroft, Rai & Wurm,'
+      puts '             SequenceServer (in prep).'
     end
 
     # Rack-interface.
@@ -131,9 +131,7 @@ module SequenceServer
       end
       pull_remote_fasta_files_if_needed
 
-      assert_blast_databases_present_in_database_dir
       logger.debug("Will use BLAST+ databases at: #{config[:database_dir]}")
-
       Database.scan_databases_dir
       Database.each do |database|
         logger.debug("Found #{database.type} database '#{database.title}'" \
@@ -187,16 +185,31 @@ module SequenceServer
     def assert_blast_installed_and_compatible
       fail BLAST_NOT_INSTALLED unless command? 'blastdbcmd'
       version = `blastdbcmd -version`.split[1]
+      fail BLAST_NOT_EXECUTABLE if !$CHILD_STATUS.success? || version.empty?
       fail BLAST_NOT_COMPATIBLE, version unless version >= MINIMUM_BLAST_VERSION
     end
 
-    def assert_blast_databases_present_in_database_dir
-      cmd = "blastdbcmd -recursive -list #{config[:database_dir]}"
-      out = `#{cmd}`
-      errpat = /BLAST Database error/
-      fail NO_BLAST_DATABASE_FOUND, config[:database_dir] if out.empty?
-      fail BLAST_DATABASE_ERROR, cmd, out if out.match(errpat) ||
-                                             !$CHILD_STATUS.success?
+    def server_url
+      host = config[:host]
+      host = 'localhost' if host == '127.0.0.1' || host == '0.0.0.0'
+      "http://#{host}:#{config[:port]}"
+    end
+
+    def open_in_browser(server_url)
+      return if using_ssh? || verbose?
+      if RUBY_PLATFORM =~ /linux/ && xdg?
+        `xdg-open #{server_url}`
+      elsif RUBY_PLATFORM =~ /darwin/
+        `open #{server_url}`
+      end
+    end
+
+    def using_ssh?
+      true if ENV['SSH_CLIENT'] || ENV['SSH_TTY'] || ENV['SSH_CONNECTION']
+    end
+
+    def xdg?
+      true if ENV['DISPLAY'] && command?('xdg-open')
     end
 
     # Return `true` if the given command exists and is executable.
