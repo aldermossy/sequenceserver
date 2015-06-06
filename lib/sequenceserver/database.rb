@@ -211,8 +211,8 @@ module SequenceServer
       # Returns user input if any. Auto-generated title otherwise.
       def get_database_title(path)
         default = make_db_title(File.basename(path))
-        print "Enter a database title or will use '#{default}': "
         return default if use_default_for_command_line
+        print "Enter a database title or will use '#{default}': "
         from_user = STDIN.gets.to_s.strip
         from_user.empty? && default || from_user
       end
@@ -223,6 +223,7 @@ module SequenceServer
       # that will be created.
       def fetch_tax_id
         default = 0
+        return default if use_default_for_command_line
         print 'Enter taxid (optional): '
         response_user = STDIN.gets.to_s.strip
         response_user.empty? && default || response_user
