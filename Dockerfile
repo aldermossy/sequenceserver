@@ -29,15 +29,15 @@ ln -s /home/software/ncbi-blast-2.2.30+/bin/* /usr/local/bin/.
 #Copy in the gemfile so this can be cached
 COPY ./Gemfile /home/software/Gemfile
 COPY ./Gemfile.lock /home/software/Gemfile.lock
-RUN chown -R app:app /home/software
-RUN bundle install
 
+RUN bundle install
+RUN chown -R app:app /home/software
 
 
 #Turn on nginx && remove default nginx config file
-RUN rm -f /etc/service/nginx/down && rm /etc/nginx/sites-enabled/default
-COPY ./config/nginx_webapp.conf /etc/nginx/sites-enabled/webapp.conf  
-
+#RUN rm -f /etc/service/nginx/down && rm /etc/nginx/sites-enabled/default
+#COPY ./config/nginx_webapp.conf /etc/nginx/sites-enabled/webapp.conf  
+#
 #Copy in all files
 WORKDIR /home/app/webapp
 
@@ -47,10 +47,10 @@ RUN mkdir -p /home/app/webapp/public/blast_data;
 #Site Specific Blast database.  Copy fasta files into blast_dir and sequenceserver will make the blastdb
 COPY ./docker_blast_sequences/Rabbit_VH_AA.fasta /home/app/webapp/public/blast_data/Rabbit_VH_AA.fasta
 
-RUN chown -R app:app /home/app/webapp
-
 #Run a script to make a json config file using ENV VAR ALDER_SEQ_HOST to set the servername where sequences should be pulled from
 ADD config/make_config_file.sh /etc/my_init.d/make_config_file.sh
+
+RUN chown -R app:app /home/app/webapp
 
 EXPOSE :4567
 
@@ -61,11 +61,13 @@ CMD ["/sbin/my_init"]
 #docker build -t aldermossy/sequenceserver .
 
 ## Manual run sequenceserver within container
-#docker run -it  -p 4567:4567 --name sequenceserver aldermossy/sequenceserver /bin/bash
+#docker run -it  -p 4567:4567 -e ALDER_SEQ_HOST=research-staging.alderbio.lan --name sequenceserver aldermossy/sequenceserver /bin/bash
 
 #docker run -d  -p 4567:4567 -e ALDER_SEQ_HOST=research-staging.alderbio.lan --name sequenceserver aldermossy/sequenceserver
 
-#docker push aldermossy/sequenceserver
+#docker run -d  -p 4567:4567 -e ALDER_SEQ_HOST=research-staging.alderbio.lan --name sequenceserver aldermossy/sequenceserver /home/app/webapp/sequenceserver
+
+#docker push aldermossy/sequenceserver 
 
 
 
