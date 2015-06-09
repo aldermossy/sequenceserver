@@ -13,6 +13,7 @@ MAINTAINER Patrick Moss <moss@alderbio.com>
 
 ENV blast_version '2.2.30'
 
+
 ################## BEGIN INSTALLATION ######################
 RUN apt-get update && apt-get install -y build-essential wget
 
@@ -25,6 +26,9 @@ RUN wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/${blast_version}/nc
 RUN tar -xvzf ncbi-blast-${blast_version}+-x64-linux.tar.gz && \
 ln -s /home/software/ncbi-blast-2.2.30+/bin/* /usr/local/bin/.
 
+# Set correct environment variables.
+ENV HOME /root
+
 
 #Copy in the gemfile so this can be cached
 COPY ./Gemfile /home/software/Gemfile
@@ -34,13 +38,13 @@ RUN bundle install
 RUN chown -R app:app /home/software
 
 
-#Turn on nginx && remove default nginx config file
-#RUN rm -f /etc/service/nginx/down && rm /etc/nginx/sites-enabled/default
-#COPY ./config/nginx_webapp.conf /etc/nginx/sites-enabled/webapp.conf  
-#
-#Copy in all files
-WORKDIR /home/app/webapp
 
+WORKDIR /home/app/webapp
+#Setup our server with runit
+RUN mkdir /etc/service/thin
+ADD config/thin/thin.sh /etc/service/thin/run
+
+#Copy in all files
 ADD . /home/app/webapp/
 RUN mkdir -p /home/app/webapp/public/blast_data;
 
@@ -54,7 +58,7 @@ RUN chown -R app:app /home/app/webapp
 
 EXPOSE :4567
 
-# Use baseimage-docker's init process.
+# Use baseimage-docker's runt process.
 CMD ["/sbin/my_init"]
 
 
@@ -65,10 +69,6 @@ CMD ["/sbin/my_init"]
 
 #docker run -d  -p 4567:4567 -e ALDER_SEQ_HOST=research-staging.alderbio.lan --name sequenceserver aldermossy/sequenceserver
 
-#docker run -d  -p 4567:4567 -e ALDER_SEQ_HOST=research-staging.alderbio.lan --name sequenceserver aldermossy/sequenceserver /home/app/webapp/sequenceserver
-
 #docker push aldermossy/sequenceserver 
-
-
 
 
