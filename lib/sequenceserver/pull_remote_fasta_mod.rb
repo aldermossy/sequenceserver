@@ -20,25 +20,6 @@ module PullRemoteFastaMod
     
     
     end
-    #
-    #
-    # def pull_remote_fasta_files_if_needed
-    #
-    #   pull_remote_fasta = PullRemoteFasta.new("./config/pull_db_config.json", config[:database_dir])
-    #   pull_remote_fasta.pull_remote_items
-    #
-    #   if pull_remote_fasta.data_has_been_pulled?
-    #
-    #     #Turn off the STDIN questions
-    #     SequenceServer::Database.use_default_for_command_line= true
-    #     SequenceServer::Database.make_blast_databases
-    #   end
-    #
-    #
-    # end
-    
-    
-    
   end
   
   def self.included(receiver)
