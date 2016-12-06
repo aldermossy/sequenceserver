@@ -16,9 +16,13 @@ module PullRemoteFastaMod
         #Turn off the STDIN questions         
         SequenceServer::Database.use_default_for_command_line= true
         SequenceServer::Database.make_blast_databases 
+        
+        #Restart webserver to clear cached database names        
+        restart_thin_server
       end
-    
-    
+    end
+    def restart_thin_server
+      `sv restart thin`
     end
   end
   
