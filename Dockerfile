@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y build-essential wget
 RUN mkdir -p /home/software
 WORKDIR /home/software
 
-RUN wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/${blast_version}/ncbi-blast-${blast_version}+-x64-linux.tar.gz 
+RUN wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/${blast_version}/ncbi-blast-${blast_version}+-x64-linux.tar.gz
 RUN tar -xvzf ncbi-blast-${blast_version}+-x64-linux.tar.gz && \
 ln -s /home/software/ncbi-blast-2.2.30+/bin/* /usr/local/bin/.
 
@@ -30,10 +30,12 @@ ln -s /home/software/ncbi-blast-2.2.30+/bin/* /usr/local/bin/.
 ENV HOME /root
 
 
-#Copy in the gemfile so this can be cached
-COPY ./Gemfile /home/software/Gemfile
-COPY ./Gemfile.lock /home/software/Gemfile.lock
 
+#Copy in the gemfile so this can be cached
+WORKDIR /home/app
+COPY ./Gemfile /home/app/Gemfile
+COPY ./Gemfile.lock /home/app/Gemfile.lock
+RUN chown -R app:app /home/app
 RUN bundle install
 RUN chown -R app:app /home/software
 
@@ -73,5 +75,3 @@ CMD ["/sbin/my_init"]
 
 
 ####
-
-
